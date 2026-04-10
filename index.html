@@ -1528,6 +1528,16 @@ button[onclick*="startFromComp"],
       <button class="btn btn-dark" onclick="edApply()" style="margin-bottom:0">Update score</button>
       <div id="edMsg" style="display:none"></div>
     </div>
+    <div class="editbox" style="margin-top:8px">
+      <div style="font-size:13px;font-weight:700;color:#0d2d6e;margin-bottom:10px">Edit a player's HCP</div>
+      <div class="selrow">
+        <div class="selcol"><label>Player</label><select id="edHcpPlayer" onchange="edHcpShow()" style="margin-bottom:0"></select></div>
+        <div class="selcol"><label>Current HCP</label><div id="edHcpCurrent" style="padding:10px 12px;border:2px solid #e5e7eb;background:#f9fafb;font-weight:700;font-size:14px;color:#0d2d6e;text-align:center">—</div></div>
+        <div class="selcol"><label>New HCP</label><input id="edHcpNew" type="number" min="0" max="54" step="0.1" placeholder="e.g. 18.4" style="margin-bottom:0;border-color:#16a34a;text-align:center"/></div>
+      </div>
+      <button class="btn btn-dark" style="background:#16a34a;margin-bottom:0" onclick="edHcpApply()">Update HCP</button>
+      <div id="edHcpMsg" style="display:none"></div>
+    </div>
   </div>
 
   <!-- SUMMARY -->
@@ -2280,7 +2290,7 @@ function viewArchived(code){
 function switchTab(t,el){
   document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('on')});el.classList.add('on');
   document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on')});$('tab-'+t).classList.add('on');
-  if(t==='scorecard')edInit();if(t==='summary')renderSummary();if(t==='leaderboard')renderLB();
+  if(t==='scorecard'){edInit();edHcpInit();}if(t==='summary')renderSummary();if(t==='leaderboard')renderLB();
 }
 function renderAll(){renderPBtns();renderHBtns();renderEntry();renderSC();renderLB();updateScTabLeader();}
 
@@ -2509,6 +2519,44 @@ function edApply(){
   m.textContent=(R.names[pi]||'P'+(pi+1))+' · Hole '+(hi+1)+' → '+(v||'cleared')+' ('+lb.t+')';
   m.className='ok';m.style.borderLeftColor=lb.c;m.style.display='block';
   setTimeout(function(){m.style.display='none'},3000);
+}
+function edHcpInit(){
+  if(!R)return;
+  var sel=$('edHcpPlayer');if(!sel)return;
+  sel.innerHTML='';
+  for(var i=0;i<R.np;i++){
+    var o=document.createElement('option');o.value=i;
+    o.textContent=(R.names[i]||'P'+(i+1))+' (HCP '+(parseFloat(R.hcps[i])||0)+')';
+    sel.appendChild(o);
+  }
+  edHcpShow();
+}
+function edHcpShow(){
+  var sel=$('edHcpPlayer');if(!sel||!R)return;
+  var pi=parseInt(sel.value)||0;
+  var cur=parseFloat(R.hcps[pi])||0;
+  $('edHcpCurrent').textContent=cur;
+  $('edHcpNew').value='';
+}
+function edHcpApply(){
+  if(!R||IS_ARCHIVED)return;
+  var pi=parseInt($('edHcpPlayer').value)||0;
+  var newHcp=parseFloat($('edHcpNew').value);
+  if(isNaN(newHcp)||newHcp<0||newHcp>54){
+    var m=$('edHcpMsg');m.textContent='Enter a valid HCP between 0 and 54';m.className='warn';m.style.display='block';
+    setTimeout(function(){m.style.display='none'},3000);return;
+  }
+  var oldHcp=parseFloat(R.hcps[pi])||0;
+  R.hcps[pi]=newHcp;R.ts=Date.now();
+  fbPatch('rounds/'+RC,{hcps:R.hcps,ts:R.ts}).catch(function(){});
+  // Also save to player profile
+  var pName=R.names[pi];
+  if(pName)saveROGSHcp(pName,newHcp);
+  renderSC();renderLB();edHcpInit();
+  var m=$('edHcpMsg');
+  m.textContent=(R.names[pi]||'P'+(pi+1))+' HCP updated: '+oldHcp+' → '+newHcp;
+  m.className='ok';m.style.display='block';
+  setTimeout(function(){m.style.display='none'},4000);
 }
 function renderSummary(){
   var pi=AP,hcp=R.hcps[pi]||0,gross=0,stable=0,played=0,toPar=0,birds=0,bogs=0,pars_=0;
