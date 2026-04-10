@@ -3610,10 +3610,23 @@ function addToCalendar(id){
 function icsEsc(s){return String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');}
 
 // ── Group Stats ─────────────────────────────────────────────────────────────────
-var ROGS_PLAYERS = [];
-// Load saved custom players from Firebase into ROGS_PLAYERS
+var ROGS_PLAYERS = [
+  'Ade Stewart','Andi Newton','Bernie Brennan','Charlie','Chris Owens',
+  'Dave Nimmo','Dave Partington','Ian Dumkow','Jay Gill','John',
+  'John McGregor','Mark Woof','Mike Havard','Paul Garvey','Peter Tinkler',
+  'Robbie Fullerton','Terry Ball','Tommy Byrne','William Rourke'
+];
+// Seed default players into Firebase on first load, then load any extras
 fbGet('rogs_profiles').then(function(profiles){
-  if(!profiles)return;
+  if(!profiles)profiles={};
+  // Seed any default players not yet in Firebase
+  ROGS_PLAYERS.forEach(function(name){
+    var key=name.toLowerCase().replace(/[^a-z0-9]/g,'_');
+    if(!profiles[key]){
+      fbPut('rogs_profiles/'+key,{name:name,hcp:0}).catch(function(){});
+    }
+  });
+  // Add any extra players from Firebase not in default list
   Object.values(profiles).forEach(function(p){
     var n=typeof p==='string'?p:(p&&p.name?p.name:null);
     if(n&&ROGS_PLAYERS.indexOf(n)===-1)ROGS_PLAYERS.push(n);
