@@ -3113,6 +3113,7 @@ function adminLoadArchived(){
         +'</div>'
         +'<div style="display:flex;gap:8px;margin-top:10px">'
         +'<button class="btn-sm" style="flex:1" onclick="viewArchived(\''+r.code+'\')">View</button>'
+        +'<button class="btn-sm" style="background:#16a34a;color:#fff;border-color:#16a34a;flex:1" onclick="adminRestoreLive(\''+r.code+'\',\''+escHtml(course)+'\',event)">Restore Live</button>'
         +'<button class="btn-sm" style="background:#c8102e;color:#fff;border-color:#c8102e;flex:1" onclick="adminDeleteArchived(\''+r.code+'\',\''+escHtml(course)+'\',event)">Delete</button>'
         +'</div></div>';
     }).join('');
@@ -3127,6 +3128,24 @@ function adminDeleteArchived(code,courseName,evt){
     var row=btn&&btn.closest('div[style*="border-left"]');
     if(row)row.remove();
   }).catch(function(e){alert('Delete failed: '+e.message);if(btn){btn.textContent='Delete';btn.style.opacity='1';}});
+}
+function adminRestoreLive(code,courseName,evt){
+  if(evt)evt.stopPropagation();
+  if(!confirm('Restore "'+courseName+'" ('+code+') back to a live round?\n\nThis will move it from archived back to live.'))return;
+  var btn=evt&&evt.target;if(btn){btn.textContent='Restoring...';btn.style.opacity='0.6';}
+  fbGet('archived_rounds/'+code).then(function(d){
+    if(!d){alert('Could not find archived round.');return;}
+    d.status='live';
+    delete d.completedAt;
+    return fbPut('rounds/'+code,d).then(function(){
+      return fbDelete('archived_rounds/'+code);
+    }).then(function(){
+      var row=btn&&btn.closest('div[style*="border-left"]');
+      if(row)row.remove();
+      alert('Round '+code+' restored to live! Players can rejoin with the room code.');
+      loadLiveRounds();
+    });
+  }).catch(function(e){alert('Restore failed: '+e.message);if(btn){btn.textContent='Restore Live';btn.style.opacity='1';}});
 }
 function adminJoin(code){
   fbGet('rounds/'+code).then(function(d){
