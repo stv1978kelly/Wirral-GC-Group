@@ -1827,7 +1827,7 @@ function groupSetScore(pi,v){
   }).catch(function(){});
   renderGroupEntry();renderHBtns();renderSC();renderLB();
 }
-function hcpS(h,si){if(h<=0)return 0;if(h>=36)return 2;return si<=h?1:0}
+function hcpS(h,si){if(h<=0||!si)return 0;var strokes=0;if(si<=h)strokes++;if(si+18<=h)strokes++;if(si+36<=h)strokes++;return strokes}
 function sbPts(s,par,hs){if(!s)return 0;var d=s-hs-par;if(d>=2)return 0;if(d===1)return 1;if(d===0)return 2;if(d===-1)return 3;if(d===-2)return 4;return 5}
 function sLabel(s,par){if(!s)return{t:'-',c:'#9ca3af'};var d=s-par;if(s===1)return{t:'Hole in one!',c:'#7c3aed'};if(d<=-2)return{t:'Eagle',c:'#d97706'};if(d===-1)return{t:'Birdie',c:'#15803d'};if(d===0)return{t:'Par',c:'#4a5a7a'};if(d===1)return{t:'Bogey',c:'#c8102e'};if(d===2)return{t:'Dbl Bogey',c:'#991b1b'};return{t:'+'+d,c:'#7f1d1d'}}
 function sCls(s,par){if(!s)return'';var d=s-par;if(d<=-2)return'eag';if(d===-1)return'bir';if(d===1)return'bog';if(d>=2)return'dbl';return''}
