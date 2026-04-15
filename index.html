@@ -4357,6 +4357,58 @@ function patchDiaryCard() {
   });
 }
 
+
+// ── Touch-drag polyfill ─────────────────────────────────────────────────────
+// Enables the group-editor drag-and-drop on phones/tablets.
+// Works for all three drag systems (dropToGroup, agDrop, compDropToGroup).
+(function(){
+  var _el=null, _clone=null;
+
+  document.addEventListener('touchstart',function(e){
+    var el=e.target.closest('[draggable="true"]');
+    if(!el)return;
+    _el=el;
+    var t=e.touches[0];
+    // Create a floating visual clone
+    _clone=el.cloneNode(true);
+    _clone.style.cssText='position:fixed;pointer-events:none;z-index:99999;'
+      +'opacity:0.8;left:'+(t.clientX-50)+'px;top:'+(t.clientY-18)+'px;margin:0;';
+    document.body.appendChild(_clone);
+    // Fire ondragstart to set the window._dragPi / _agDrag / _compDragPi variable
+    var ds=el.getAttribute('ondragstart');
+    if(ds){try{(new Function('event',ds))({dataTransfer:{effectAllowed:''}});}catch(x){}}
+    e.preventDefault();
+  },{passive:false});
+
+  document.addEventListener('touchmove',function(e){
+    if(!_el)return;
+    var t=e.touches[0];
+    if(_clone){_clone.style.left=(t.clientX-50)+'px';_clone.style.top=(t.clientY-18)+'px';}
+    e.preventDefault();
+  },{passive:false});
+
+  document.addEventListener('touchend',function(e){
+    if(!_el)return;
+    var t=e.changedTouches[0];
+    if(_clone){document.body.removeChild(_clone);_clone=null;}
+    // Briefly hide the dragged element so elementFromPoint can see what's underneath
+    _el.style.visibility='hidden';
+    var target=document.elementFromPoint(t.clientX,t.clientY);
+    _el.style.visibility='';
+    _el=null;
+    // Walk up to the nearest [data-gi] group container
+    var group=target&&target.closest('[data-gi]');
+    if(!group)return;
+    var gi=parseInt(group.getAttribute('data-gi'));
+    var od=group.getAttribute('ondrop');
+    if(!od)return;
+    // Parse the function name and call it with a fake event
+    var m=od.match(/^(\w+)\(/);
+    if(m&&window[m[1]]){window[m[1]]({preventDefault:function(){}},gi);}
+  },{passive:false});
+})();
+// ── End touch-drag polyfill ─────────────────────────────────────────────────
+
 </script>
 
 <!-- SW removed -->
